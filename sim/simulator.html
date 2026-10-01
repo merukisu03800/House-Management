@@ -1,0 +1,561 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>本八幡マンション資金計画</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Zen+Kaku+Gothic+New:wght@500;700;900&display=swap">
+<style>
+/* レイアウト: 左に入力（広い画面では追従）、右に結果。結論 → 内訳 → 表 → グラフの順 */
+:root {
+  --bg: #f4f6f8;
+  --surface: #ffffff;
+  --ink: #17212b;
+  --ink-2: #4d5965;
+  --ink-3: #75808b;
+  --line: #dbe1e7;
+  --accent: #1d5a9e;
+  --accent-soft: #e6eef8;
+  --hl: #fff1b0;
+  --good: #1a7a48; --good-bg: #e3f4ea;
+  --warn: #9a5c00; --warn-bg: #fdf0d9;
+  --bad: #b8322f;  --bad-bg: #fbe5e4;
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a;
+  --rent: #9aa5b1;
+  --f-display: "Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic", sans-serif;
+  --f-body: "BIZ UDPGothic", "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11161c; --surface: #1a2129; --ink: #edf1f5; --ink-2: #aab4bf; --ink-3: #8691a0;
+    --line: #2d3742; --accent: #74aaf0; --accent-soft: #1d2a3a; --hl: #4a420f;
+    --good: #5ccb92; --good-bg: #173226; --warn: #f1aa48; --warn-bg: #3a2c12;
+    --bad: #f27b76; --bad-bg: #3d1d1d;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --rent: #5f6b78;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11161c; --surface: #1a2129; --ink: #edf1f5; --ink-2: #aab4bf; --ink-3: #8691a0;
+  --line: #2d3742; --accent: #74aaf0; --accent-soft: #1d2a3a; --hl: #4a420f;
+  --good: #5ccb92; --good-bg: #173226; --warn: #f1aa48; --warn-bg: #3a2c12;
+  --bad: #f27b76; --bad-bg: #3d1d1d;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --rent: #5f6b78;
+  color-scheme: dark;
+}
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: var(--f-body); font-size: 15px; line-height: 1.7;
+  padding: 24px 16px 48px;
+}
+table { font-size: inherit; }
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 24px; }
+header h1 {
+  font-family: var(--f-display); font-weight: 900; font-size: 1.75rem; line-height: 1.3;
+  margin: 0; text-wrap: balance; letter-spacing: .02em;
+}
+header p { margin: 6px 0 0; color: var(--ink-2); max-width: 62ch; }
+.cond { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.cond span {
+  font-size: .8rem; padding: 2px 10px; border-radius: 999px;
+  background: var(--accent-soft); color: var(--accent);
+}
+.layout { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 24px; align-items: start; }
+@media (max-width: 880px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+
+/* 入力パネル */
+.panel {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+  padding: 8px 16px 16px; position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px);
+  max-height: calc(100vh - 32px); overflow-y: auto;
+}
+@media (max-width: 880px) { .panel { position: static; max-height: none; } }
+.panel details { border-bottom: 1px solid var(--line); }
+.panel details:last-of-type { border-bottom: 0; }
+.panel summary {
+  cursor: pointer; padding: 12px 0; font-family: var(--f-display); font-weight: 700;
+  list-style: none; display: flex; justify-content: space-between; align-items: center;
+}
+.panel summary::-webkit-details-marker { display: none; }
+.panel summary::after { content: "＋"; color: var(--ink-3); font-weight: 400; }
+.panel details[open] summary::after { content: "－"; }
+.panel summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.fields { display: grid; gap: 16px; padding-bottom: 14px; }
+.field label { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-weight: 700; font-size: .92rem; }
+.field .num { display: flex; align-items: center; gap: 4px; }
+.field input[type=number] {
+  width: 6.5em; font: inherit; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums;
+  padding: 2px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--ink);
+}
+.field .unit { font-size: .8rem; color: var(--ink-2); font-weight: 400; min-width: 2.6em; }
+.field input[type=range] { width: 100%; accent-color: var(--accent); margin: 4px 0 0; }
+.field .help { font-size: .78rem; color: var(--ink-2); line-height: 1.55; margin: 2px 0 0; }
+.field .derived { font-size: .78rem; color: var(--accent); font-weight: 700; }
+input:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.actions { display: flex; gap: 8px; padding-top: 12px; }
+button {
+  font: inherit; font-size: .85rem; cursor: pointer; padding: 6px 14px; border-radius: 6px;
+  border: 1px solid var(--line); background: var(--bg); color: var(--ink);
+}
+button:hover { border-color: var(--accent); color: var(--accent); }
+
+/* 結果 */
+.results { display: grid; gap: 20px; min-width: 0; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.tile {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px;
+  display: grid; gap: 4px; align-content: start;
+}
+.tile .k { font-size: .82rem; color: var(--ink-2); font-weight: 700; }
+.tile .v { font-family: var(--f-display); font-weight: 900; font-size: 1.7rem; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.tile .v small { font-size: .9rem; font-weight: 700; margin-left: 2px; }
+.tile .sub { font-size: .8rem; color: var(--ink-2); line-height: 1.5; }
+.tile.hero { grid-column: 1 / -1; border-color: var(--accent); background: var(--accent-soft); }
+.tile.hero .v { font-size: 2.4rem; color: var(--accent); }
+.tile.hero .facts { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: .85rem; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.tile.hero .facts b { color: var(--ink); }
+.chip {
+  display: inline-flex; align-items: center; gap: 4px; justify-self: start;
+  font-size: .76rem; font-weight: 700; padding: 1px 9px; border-radius: 999px; white-space: nowrap;
+}
+.chip.good { color: var(--good); background: var(--good-bg); }
+.chip.warn { color: var(--warn); background: var(--warn-bg); }
+.chip.bad  { color: var(--bad);  background: var(--bad-bg); }
+
+section.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px 18px 16px; min-width: 0; }
+section.card h2 { font-family: var(--f-display); font-weight: 700; font-size: 1.15rem; margin: 0; text-wrap: balance; }
+section.card .lead { margin: 4px 0 14px; color: var(--ink-2); font-size: .88rem; max-width: 70ch; }
+.note { font-size: .8rem; color: var(--ink-3); margin: 10px 0 0; }
+
+.tbl-wrap { overflow-x: auto; }
+table.t { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+.t th, .t td { padding: 7px 10px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.t th { font-size: .8rem; color: var(--ink-2); font-weight: 700; }
+.t th:first-child, .t td:first-child { text-align: left; }
+.t tr.sel td { background: var(--hl); }
+.t td.sel { background: var(--hl); font-weight: 700; outline: 2px solid var(--accent); outline-offset: -2px; }
+.t tbody tr:last-child td { border-bottom: 0; }
+
+/* 住居費の内訳バー */
+.bars { display: grid; gap: 10px; }
+.bar-row { display: grid; grid-template-columns: 7.5em minmax(0, 1fr) 6.5em; gap: 10px; align-items: center; }
+.bar-row .lbl { font-size: .85rem; font-weight: 700; }
+.bar-row .amt { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+.track { display: flex; gap: 2px; height: 26px; }
+.seg { height: 100%; position: relative; }
+.seg:first-child { border-radius: 4px 0 0 4px; }
+.seg:last-child { border-radius: 0 4px 4px 0; }
+.seg:only-child { border-radius: 4px; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: .8rem; color: var(--ink-2); margin-top: 10px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+
+/* グラフ */
+.chart { position: relative; }
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.chart .grid line { stroke: var(--line); stroke-width: 1; }
+.chart .axis text { fill: var(--ink-3); font-size: 11px; font-family: var(--f-body); }
+.chart .lab { fill: var(--ink-2); font-size: 11px; font-weight: 700; font-family: var(--f-body); }
+.tip {
+  position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--line);
+  border-radius: 8px; padding: 8px 10px; font-size: .8rem; line-height: 1.5; box-shadow: 0 4px 14px rgba(0,0,0,.12);
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.tip b { display: block; margin-bottom: 2px; }
+.tip i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+.compare { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-top: 14px; }
+.compare div { border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; font-size: .85rem; }
+.compare strong { display: block; font-size: 1.1rem; font-variant-numeric: tabular-nums; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .seg { transition: flex-basis .25s ease; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>本八幡マンション資金計画</h1>
+    <p>左の数字を変えると、右の結果がすぐに変わります。初期値は <code>sim/params.py</code> と同じです（2026年10月時点の検討内容。購入予定は2027年7月）。金額の単位は万円です。</p>
+    <div class="cond" aria-label="今の前提">
+      <span>2027年7月に購入予定</span><span>3人家族（2人目の可能性あり）</span><span>本八幡 駅徒歩10分以内</span><span>3LDK・65㎡以上</span><span>中古なら築20年以内</span><span>単独ローン・変動金利</span>
+    </div>
+  </header>
+
+  <div class="layout">
+    <form class="panel" id="form" autocomplete="off"></form>
+
+    <div class="results">
+      <div class="tiles" id="tiles"></div>
+
+      <section class="card">
+        <h2>購入後の毎月の住居費</h2>
+        <p class="lead">ローンの返済に加えて、マンションは管理費・修繕積立金・固定資産税が毎月かかります。今の家賃と並べています。</p>
+        <div class="bars" id="bars"></div>
+        <div class="legend">
+          <span><i style="background:var(--s1)"></i>ローン返済</span>
+          <span><i style="background:var(--s2)"></i>管理費＋修繕積立金</span>
+          <span><i style="background:var(--s3)"></i>固定資産税（年額÷12）</span>
+          <span><i style="background:var(--rent)"></i>今の家賃</span>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>頭金の目標と毎月の積立額</h2>
+        <p class="lead">購入時に必要な現金は「頭金＋諸費用」です。今の貯金を差し引いて、毎月いくら貯めればよいかを逆算しています。黄色が今の設定です。</p>
+        <div class="tbl-wrap"><table class="t" id="saveTbl"></table></div>
+        <p class="note">毎月の積立額はボーナスも含めた平均です。</p>
+      </section>
+
+      <section class="card">
+        <h2>金利ごとの返済額</h2>
+        <p class="lead">借入額と返済年数はそのままで、金利だけを変えた場合です。返済負担率は「年間の返済額 ÷ 年収（額面）」で、20%以内が安心、25%までが目安です。</p>
+        <div class="tbl-wrap"><table class="t" id="rateTbl"></table></div>
+      </section>
+
+      <section class="card">
+        <h2>年収から見た借入額の上限</h2>
+        <p class="lead">「無理なく返せる額」と「銀行の審査で借りられる額」は別です。審査は多くの銀行で、審査用の金利（実際より高め）・返済負担率35%以内で見られます。</p>
+        <div class="tbl-wrap"><table class="t" id="limitTbl"></table></div>
+        <p class="note" id="limitNote"></p>
+      </section>
+
+      <section class="card">
+        <h2>変動金利が上がった場合</h2>
+        <p class="lead" id="riseLead"></p>
+        <div class="chart" id="chart"></div>
+        <div class="legend">
+          <span><i style="background:var(--s1)"></i>変動金利（上がっていく想定）</span>
+          <span><i style="background:var(--s2)"></i>全期間固定金利</span>
+        </div>
+        <div class="compare" id="compare"></div>
+        <p class="note">変動金利の「5年ルール・125%ルール」（返済額の急な増加を抑える仕組み）は考えず、毎年返済額を計算し直す厳しめの試算です。住宅ローン控除・団信の差も入れていません。</p>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  // 初期値は sim/params.py と同じ
+  const GROUPS = [
+    { title: "物件と購入時のお金", open: true, fields: [
+      { id: "price", label: "物件の価格", unit: "万円", min: 3000, max: 10000, step: 100, value: 6000,
+        help: "本八幡の駅近・築浅・3LDKは、2026年10月時点で約8,000万円から。" },
+      { id: "down", label: "頭金の割合", unit: "%", min: 0, max: 40, step: 1, value: 10,
+        help: "物件価格のうち現金で払う割合。残りがローンの借入額になります。", derived: s => `頭金 ${man(s.price * s.down / 100)}／借入 ${man(loanOf(s))}` },
+      { id: "cost", label: "諸費用", unit: "%", min: 2, max: 10, step: 0.5, value: 7,
+        help: "仲介手数料・登記・ローン手数料・火災保険など。新築3〜5%、中古6〜8%が目安。", derived: s => `= ${man(s.price * s.cost / 100)}` },
+    ]},
+    { title: "貯金の計画", open: true, fields: [
+      { id: "savings", label: "今の貯金", unit: "万円", min: 0, max: 2000, step: 10, value: 250,
+        help: "今の貯金のうち、家の購入に使える額。" },
+      { id: "months", label: "購入までの期間", unit: "ヶ月", min: 1, max: 36, step: 1, value: 9,
+        help: "今から購入（引き渡し）までに貯められる期間。2026年10月から2027年7月までで9ヶ月。", derived: s => `${purchaseMonth(s.months)}に購入` },
+    ]},
+    { title: "ローン", open: true, fields: [
+      { id: "years", label: "返済年数", unit: "年", min: 15, max: 35, step: 1, value: 30,
+        help: "長くすると毎月の返済は減りますが、利息の合計は増えます。" },
+      { id: "income", label: "年収（額面）", unit: "万円", min: 300, max: 2000, step: 10, value: 900,
+        help: "単独ローンなので本人の年収。税金などが引かれる前の額。" },
+      { id: "rate", label: "今の金利", unit: "%", min: 0.3, max: 4, step: 0.05, value: 1.0,
+        help: "毎月の住居費の計算に使う金利。2026年の変動金利は0.9〜1.1%台が中心。" },
+      { id: "screen", label: "審査用の金利", unit: "%", min: 2, max: 5, step: 0.1, value: 3.5,
+        help: "銀行が審査で使う、実際より高めの金利。多くは3〜4%。" },
+    ]},
+    { title: "金利が上がる想定", open: false, fields: [
+      { id: "step", label: "1回に上がる幅", unit: "%", min: 0, max: 1, step: 0.05, value: 0.25,
+        help: "変動金利が1回の見直しで上がる幅。" },
+      { id: "every", label: "上がる間隔", unit: "年", min: 1, max: 10, step: 1, value: 3,
+        help: "何年ごとに金利が上がるか。" },
+      { id: "cap", label: "金利の上限", unit: "%", min: 1, max: 6, step: 0.1, value: 3.0,
+        help: "これ以上は上がらないと仮定する金利。" },
+      { id: "fixed", label: "全期間固定の金利", unit: "%", min: 0.5, max: 5, step: 0.05, value: 2.0,
+        help: "比べる固定金利。2026年9月のフラット35は3.46%。" },
+    ]},
+    { title: "毎月かかるお金（ローン以外）", open: false, fields: [
+      { id: "mgmt", label: "管理費", unit: "万円/月", min: 0, max: 5, step: 0.1, value: 1.8,
+        help: "共用部分の掃除や管理人などの費用。" },
+      { id: "repair", label: "修繕積立金", unit: "万円/月", min: 0, max: 5, step: 0.1, value: 1.5,
+        help: "将来の大規模修繕のための積立。年数がたつと上がることが多い。" },
+      { id: "tax", label: "固定資産税など", unit: "万円/年", min: 0, max: 50, step: 1, value: 18,
+        help: "固定資産税・都市計画税。毎年かかります。" },
+      { id: "rent", label: "今の家賃", unit: "万円/月", min: 0, max: 30, step: 0.1, value: 10.5,
+        help: "購入後の住居費と比べるために使います。" },
+    ]},
+  ];
+  const FIELDS = GROUPS.flatMap(g => g.fields);
+  const DEFAULTS = Object.fromEntries(FIELDS.map(f => [f.id, f.value]));
+  const STORE_KEY = "house-sim-v2";
+  const DOWN_OPTIONS = [0, 5, 10, 20];
+  const MONTH_OPTIONS = [6, 9, 12];
+  const RATE_OPTIONS = [0.8, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5];
+
+  // ---- 計算（sim/loan_simulator.py と同じ式） ----
+  function monthlyPayment(principal, ratePct, years) {
+    const n = years * 12, r = ratePct / 100 / 12;
+    if (r === 0) return principal / n;
+    return principal * r * Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1);
+  }
+  const maxLoan = (monthly, ratePct, years) => monthly / monthlyPayment(1, ratePct, years);
+  function risingSchedule(principal, start, step, every, cap, years) {
+    let bal = principal, total = 0;
+    const rows = [];
+    for (let y = 0; y < years; y++) {
+      const rate = Math.min(start + step * Math.floor(y / every), Math.max(cap, start));
+      const pay = monthlyPayment(bal, rate, years - y);
+      const r = rate / 100 / 12;
+      for (let m = 0; m < 12; m++) { bal -= pay - bal * r; total += pay; }
+      rows.push({ year: y + 1, rate, pay });
+    }
+    return { rows, total };
+  }
+  const loanOf = s => s.price * (1 - s.down / 100);
+  // 起点は2026年10月（検討を始めた月）。months ヶ月後を購入月として表示する
+  function purchaseMonth(months) {
+    const t = 2026 * 12 + 9 + months;  // 2026年10月 = 2026*12 + 9（0始まりの月）
+    return `${Math.floor(t / 12)}年${t % 12 + 1}月`;
+  }
+
+  // ---- 表示用 ----
+  const man = x => `${Math.round(x).toLocaleString("ja-JP")}万円`;
+  const yen = xMan => `${Math.round(xMan * 10000).toLocaleString("ja-JP")}円`;
+  const manMonth = xMan => `${(xMan).toFixed(1)}万円`;
+  const pct = x => `${(x * 100).toFixed(1)}%`;
+  function burdenChip(ratio) {
+    if (ratio <= 0.20) return `<span class="chip good">✓ 安心</span>`;
+    if (ratio <= 0.25) return `<span class="chip warn">! 目安の上限付近</span>`;
+    return `<span class="chip bad">✕ 負担が重い</span>`;
+  }
+
+  // ---- 入力フォーム ----
+  const form = document.getElementById("form");
+  let state = { ...DEFAULTS };
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORE_KEY) || "null");
+    if (saved) for (const k of Object.keys(DEFAULTS)) if (typeof saved[k] === "number") state[k] = saved[k];
+  } catch (e) { /* 保存なしで動かす */ }
+
+  form.innerHTML = GROUPS.map(g => `
+    <details ${g.open ? "open" : ""}>
+      <summary>${g.title}</summary>
+      <div class="fields">
+        ${g.fields.map(f => `
+          <div class="field">
+            <label for="${f.id}">${f.label}
+              <span class="num"><input type="number" id="${f.id}" min="${f.min}" max="${f.max}" step="${f.step}" value="${state[f.id]}"><span class="unit">${f.unit}</span></span>
+            </label>
+            <input type="range" id="${f.id}-r" aria-label="${f.label}" min="${f.min}" max="${f.max}" step="${f.step}" value="${state[f.id]}">
+            ${f.derived ? `<div class="derived" id="${f.id}-d"></div>` : ""}
+            <p class="help">${f.help}</p>
+          </div>`).join("")}
+      </div>
+    </details>`).join("") + `
+    <div class="actions"><button type="button" id="reset">初期値に戻す</button></div>`;
+
+  form.addEventListener("submit", e => e.preventDefault());
+  form.addEventListener("input", e => {
+    const id = e.target.id.replace(/-r$/, "");
+    if (!(id in DEFAULTS)) return;
+    const v = parseFloat(e.target.value);
+    if (!Number.isFinite(v)) return;
+    state[id] = v;
+    const other = document.getElementById(e.target.id.endsWith("-r") ? id : id + "-r");
+    if (other) other.value = v;
+    render();
+  });
+  document.getElementById("reset").addEventListener("click", () => {
+    state = { ...DEFAULTS };
+    for (const f of FIELDS) {
+      document.getElementById(f.id).value = state[f.id];
+      document.getElementById(f.id + "-r").value = state[f.id];
+    }
+    render();
+  });
+
+  // ---- 描画 ----
+  function render() {
+    const s = state;
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(s)); } catch (e) {}
+    for (const f of FIELDS) if (f.derived) document.getElementById(f.id + "-d").textContent = f.derived(s);
+
+    const loan = loanOf(s);
+    const cost = s.price * s.cost / 100;
+    const down = s.price * s.down / 100;
+    const need = down + cost;
+    const remain = Math.max(need - s.savings, 0);
+    const pay = monthlyPayment(loan, s.rate, s.years);
+    const burden = pay * 12 / s.income;
+    const extra = s.mgmt + s.repair;
+    const taxM = s.tax / 12;
+    const housing = pay + extra + taxM;
+    const screenLimit = maxLoan(s.income * 0.35 / 12, s.screen, s.years);
+
+    // 結論タイル
+    const diff = housing - s.rent;
+    const screenOk = loan <= screenLimit;
+    const screenChip = screenOk
+      ? (loan <= screenLimit * 0.9 ? `<span class="chip good">✓ 通る見込み</span>` : `<span class="chip warn">! ぎりぎり</span>`)
+      : `<span class="chip bad">✕ 届かない見込み</span>`;
+    document.getElementById("tiles").innerHTML = `
+      <div class="tile hero"><span class="k">毎月のローン返済額</span>
+        <span class="v">${yen(pay).replace("円", "")}<small>円</small></span>
+        <div class="facts">
+          <span>借入額 <b>${man(loan)}</b></span>
+          <span>金利 <b>${s.rate}%</b></span>
+          <span>返済年数 <b>${s.years}年</b></span>
+          <span>年間の返済 <b>${man(pay * 12)}</b></span>
+          <span>総返済額 <b>${man(pay * 12 * s.years)}</b>（うち利息 ${man(pay * 12 * s.years - loan)}）</span>
+        </div></div>
+      <div class="tile"><span class="k">購入後の毎月の住居費</span>
+        <span class="v">${manMonth(housing).replace("万円", "")}<small>万円</small></span>
+        <span class="sub">今の家賃より <b>${diff >= 0 ? "+" : "−"}${manMonth(Math.abs(diff))}</b></span></div>
+      <div class="tile"><span class="k">返済負担率（金利${s.rate}%）</span>
+        <span class="v">${(burden * 100).toFixed(1)}<small>%</small></span>
+        ${burdenChip(burden)}
+        <span class="sub">年間の返済 ${man(pay * 12)} ÷ 年収 ${man(s.income)}</span></div>
+      <div class="tile"><span class="k">購入時に必要な現金</span>
+        <span class="v">${Math.round(need).toLocaleString("ja-JP")}<small>万円</small></span>
+        <span class="sub">${remain > 0 ? `今の貯金から ${s.months}ヶ月で <b>月${manMonth(remain / s.months)}</b> の積立` : "今の貯金で足りています"}</span></div>
+      <div class="tile"><span class="k">銀行の審査</span>
+        <span class="v">${Math.round(screenLimit).toLocaleString("ja-JP")}<small>万円まで</small></span>
+        ${screenChip}
+        <span class="sub">借入 ${man(loan)}（審査金利${s.screen}%・負担率35%）</span></div>`;
+
+    // 住居費バー
+    const maxTotal = Math.max(housing, s.rent) || 1;
+    const segs = [[pay, "var(--s1)", "ローン返済"], [extra, "var(--s2)", "管理費＋修繕積立金"], [taxM, "var(--s3)", "固定資産税"]];
+    document.getElementById("bars").innerHTML = `
+      <div class="bar-row"><span class="lbl">購入後</span>
+        <div class="track" style="width:${housing / maxTotal * 100}%">
+          ${segs.filter(x => x[0] > 0).map(([v, c, n]) => `<div class="seg" style="flex:${v} 1 0;background:${c}" title="${n} ${yen(v)}"></div>`).join("")}
+        </div><span class="amt">${manMonth(housing)}</span></div>
+      <div class="bar-row"><span class="lbl">今の家賃</span>
+        <div class="track" style="width:${s.rent / maxTotal * 100}%"><div class="seg" style="flex:1;background:var(--rent)" title="今の家賃 ${yen(s.rent)}"></div></div>
+        <span class="amt">${manMonth(s.rent)}</span></div>
+      <p class="note" style="margin:0">内訳: ローン ${yen(pay)} ／ 管理費＋修繕積立金 ${yen(extra)} ／ 固定資産税 ${yen(taxM)}</p>`;
+
+    // 頭金の逆算表
+    const downs = [...new Set([...DOWN_OPTIONS, s.down])].sort((a, b) => a - b);
+    const months = [...new Set([...MONTH_OPTIONS, s.months])].sort((a, b) => a - b);
+    document.getElementById("saveTbl").innerHTML = `
+      <thead><tr><th>頭金</th><th>必要な現金</th>${months.map(m => `<th>${m}ヶ月で貯める</th>`).join("")}</tr></thead>
+      <tbody>${downs.map(d => {
+        const target = s.price * d / 100 + cost;
+        const rem = Math.max(target - s.savings, 0);
+        const rowSel = d === s.down;
+        return `<tr${rowSel ? ' class="sel"' : ""}><td>${d}%（${man(s.price * d / 100)}）</td><td>${man(target)}</td>${
+          months.map(m => `<td${rowSel && m === s.months ? ' class="sel"' : ""}>月${manMonth(rem / m)}</td>`).join("")}</tr>`;
+      }).join("")}</tbody>`;
+
+    // 金利別
+    const rates = [...new Set([...RATE_OPTIONS, s.rate])].sort((a, b) => a - b);
+    document.getElementById("rateTbl").innerHTML = `
+      <thead><tr><th>金利</th><th>月の返済</th><th>総返済額</th><th>うち利息</th><th>返済負担率</th><th></th></tr></thead>
+      <tbody>${rates.map(r => {
+        const m = monthlyPayment(loan, r, s.years), total = m * 12 * s.years, br = m * 12 / s.income;
+        return `<tr${r === s.rate ? ' class="sel"' : ""}><td>${r.toFixed(2)}%</td><td>${yen(m)}</td><td>${man(total)}</td><td>${man(total - loan)}</td><td>${pct(br)}</td><td>${burdenChip(br)}</td></tr>`;
+      }).join("")}</tbody>`;
+
+    // 借入上限
+    document.getElementById("limitTbl").innerHTML = `
+      <thead><tr><th>金利</th><th>負担率20%（安心）</th><th>負担率25%（目安の上限）</th></tr></thead>
+      <tbody>${rates.map(r => {
+        const a = maxLoan(s.income * 0.20 / 12, r, s.years), b = maxLoan(s.income * 0.25 / 12, r, s.years);
+        const mark = v => loan <= v ? "" : ` style="color:var(--bad)"`;
+        return `<tr${r === s.rate ? ' class="sel"' : ""}><td>${r.toFixed(2)}%</td><td${mark(a)}>${man(a)}</td><td${mark(b)}>${man(b)}</td></tr>`;
+      }).join("")}</tbody>`;
+    document.getElementById("limitNote").innerHTML =
+      `今の借入額は <b>${man(loan)}</b>。赤い数字は借入額に届かない上限です。銀行の審査（審査金利${s.screen}%・負担率35%）では <b>${man(screenLimit)}</b> まで。`;
+
+    // 変動 vs 固定
+    const sched = risingSchedule(loan, s.rate, s.step, s.every, s.cap, s.years);
+    const fixedPay = monthlyPayment(loan, s.fixed, s.years);
+    const fixedTotal = fixedPay * 12 * s.years;
+    document.getElementById("riseLead").textContent =
+      `変動金利が${s.rate}%から${s.every}年ごとに${s.step}%ずつ上がり、${Math.max(s.cap, s.rate)}%で止まると仮定した場合の月の返済額です。全期間固定${s.fixed}%と比べています。`;
+    drawChart(sched.rows, fixedPay, s);
+    const peak = Math.max(...sched.rows.map(r => r.pay));
+    const cheaper = sched.total <= fixedTotal ? "変動" : "固定";
+    document.getElementById("compare").innerHTML = `
+      <div>変動の総返済額<strong>${man(sched.total)}</strong></div>
+      <div>固定の総返済額<strong>${man(fixedTotal)}</strong></div>
+      <div>変動の最大の月返済<strong>${yen(peak)}</strong>負担率 ${pct(peak * 12 / s.income)}</div>
+      <div>この想定で総返済が少ないのは<strong>${cheaper}（差 ${man(Math.abs(sched.total - fixedTotal))}）</strong></div>`;
+  }
+
+  // ---- グラフ（SVG・ホバーで値を表示） ----
+  function drawChart(rows, fixedPay, s) {
+    const el = document.getElementById("chart");
+    const W = 720, H = 280, L = 58, R = 64, T = 14, B = 34;
+    const vals = rows.map(r => r.pay).concat(fixedPay);
+    const step = 1;  // 1万円刻み
+    let lo = Math.floor(Math.min(...vals) * 0.95 / step) * step;
+    let hi = Math.ceil(Math.max(...vals) * 1.03 / step) * step;
+    if (hi - lo < 2) { hi += 1; lo = Math.max(0, lo - 1); }
+    const tickStep = Math.max(1, Math.ceil((hi - lo) / 5));
+    const n = rows.length;
+    const x = yr => L + (yr - 1) / Math.max(n - 1, 1) * (W - L - R);
+    const y = v => T + (hi - v) / (hi - lo) * (H - T - B);
+    let yTicks = "";
+    for (let v = lo; v <= hi + 1e-9; v += tickStep) {
+      yTicks += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}"/>`;
+    }
+    let yLabels = "";
+    for (let v = lo; v <= hi + 1e-9; v += tickStep) {
+      yLabels += `<text x="${L - 8}" y="${y(v) + 4}" text-anchor="end">${v}万円</text>`;
+    }
+    const xStep = n > 20 ? 5 : n > 10 ? 2 : 1;
+    let xLabels = "";
+    for (let yr = 1; yr <= n; yr++) if (yr === 1 || yr % xStep === 0) xLabels += `<text x="${x(yr)}" y="${H - B + 18}" text-anchor="middle">${yr}年目</text>`;
+    // 変動は年ごとに変わる階段状
+    let d = `M${x(1)},${y(rows[0].pay)}`;
+    for (let i = 1; i < n; i++) d += ` H${x(rows[i].year)} V${y(rows[i].pay)}`;
+    const last = rows[n - 1];
+    el.innerHTML = `
+      <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="変動金利と固定金利の月返済額の推移">
+        <g class="grid">${yTicks}</g>
+        <g class="axis">${yLabels}${xLabels}</g>
+        <line x1="${x(1)}" x2="${x(n)}" y1="${y(fixedPay)}" y2="${y(fixedPay)}" stroke="var(--s2)" stroke-width="2" fill="none"/>
+        <path d="${d}" stroke="var(--s1)" stroke-width="2" fill="none" stroke-linejoin="round"/>
+        <circle cx="${x(n)}" cy="${y(last.pay)}" r="4" fill="var(--s1)" stroke="var(--surface)" stroke-width="2"/>
+        <text class="lab" x="${x(n) + 8}" y="${y(last.pay) + (last.pay >= fixedPay ? -4 : 12)}">変動 ${last.pay.toFixed(1)}万</text>
+        <text class="lab" x="${x(n) + 8}" y="${y(fixedPay) + (last.pay >= fixedPay ? 12 : -4)}">固定 ${fixedPay.toFixed(1)}万</text>
+        <line id="xh" y1="${T}" y2="${H - B}" stroke="var(--ink-3)" stroke-width="1" stroke-dasharray="3 3" visibility="hidden"/>
+        <circle id="dot1" r="4" fill="var(--s1)" stroke="var(--surface)" stroke-width="2" visibility="hidden"/>
+        <circle id="dot2" r="4" fill="var(--s2)" stroke="var(--surface)" stroke-width="2" visibility="hidden"/>
+        <rect id="hit" x="${L}" y="${T}" width="${W - L - R}" height="${H - T - B}" fill="transparent"/>
+      </svg>
+      <div class="tip" id="tip" hidden></div>`;
+    const svg = el.querySelector("svg"), tip = el.querySelector("#tip");
+    const xh = el.querySelector("#xh"), d1 = el.querySelector("#dot1"), d2 = el.querySelector("#dot2");
+    const show = ev => {
+      const box = svg.getBoundingClientRect();
+      const px = (ev.clientX - box.left) / box.width * W;
+      const yr = Math.min(n, Math.max(1, Math.round((px - L) / (W - L - R) * (n - 1) + 1)));
+      const r = rows[yr - 1];
+      for (const [node, cy] of [[xh, null], [d1, y(r.pay)], [d2, y(fixedPay)]]) {
+        node.setAttribute("visibility", "visible");
+        if (cy === null) { node.setAttribute("x1", x(yr)); node.setAttribute("x2", x(yr)); }
+        else { node.setAttribute("cx", x(yr)); node.setAttribute("cy", cy); }
+      }
+      tip.hidden = false;
+      tip.innerHTML = `<b>${yr}年目</b><i style="background:var(--s1)"></i>変動 ${r.rate.toFixed(2)}%：${yen(r.pay)}<br><i style="background:var(--s2)"></i>固定 ${s.fixed}%：${yen(fixedPay)}`;
+      const left = x(yr) / W * box.width;
+      tip.style.left = Math.min(Math.max(left - tip.offsetWidth / 2, 0), box.width - tip.offsetWidth) + "px";
+      tip.style.top = "-6px";
+    };
+    const hide = () => { tip.hidden = true; [xh, d1, d2].forEach(nd => nd.setAttribute("visibility", "hidden")); };
+    const hit = el.querySelector("#hit");
+    hit.addEventListener("pointermove", show);
+    hit.addEventListener("pointerdown", show);
+    hit.addEventListener("pointerleave", hide);
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>

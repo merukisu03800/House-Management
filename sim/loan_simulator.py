@@ -2,7 +2,7 @@
 """住宅購入シミュレーター（標準ライブラリのみ）
 
 使い方:
-    python3 sim/loan_simulator.py                 # params.json の内容で全レポート
+    python3 sim/loan_simulator.py                 # params.py の内容で全レポート
     python3 sim/loan_simulator.py --price 6000    # 物件価格(万円)を上書き
     python3 sim/loan_simulator.py --help
 
@@ -12,10 +12,9 @@
 - 住宅ローン控除・税金・団信保険料の差は考慮しない。
 """
 import argparse
-import json
-from pathlib import Path
+import copy
 
-PARAMS_PATH = Path(__file__).with_name("params.json")
+from params import PARAMS
 
 
 def monthly_payment(principal: float, annual_rate_pct: float, years: int) -> float:
@@ -74,11 +73,9 @@ def report(p: dict) -> None:
 
     # 1. 必要な自己資金
     print("\n[1] 購入時に必要な現金")
-    emergency = p["emergency_fund_man"]
-    need = down + cost + emergency
+    need = down + cost
     print(f"  頭金          {man(down)}  (価格の{p['down_payment_ratio']:.0%})")
     print(f"  諸費用        {man(cost)}  (価格の{p['purchase_cost_ratio']:.0%})")
-    print(f"  生活防衛資金  {man(emergency)}  (購入後も手元に残す)")
     print(f"  合計          {man(need)}")
     months = p["months_until_purchase"]
     gap = need - p["current_savings_man"]
@@ -93,11 +90,11 @@ def report(p: dict) -> None:
     plan_months = p["saving_months_options"]
     print(f"  {'頭金':>10} {'必要な現金':>10} " + " ".join(f"{str(m) + 'ヶ月':>9}" for m in plan_months))
     for ratio in p["down_payment_options"]:
-        target = price * ratio + cost + emergency
+        target = price * ratio + cost
         remain = max(target - p["current_savings_man"], 0)
         cells = " ".join(f"{man(remain / m):>9}" for m in plan_months)
         print(f"  {ratio:>4.0%}({man(price * ratio):>7}) {man(target):>10} {cells}")
-    print(f"  ※必要な現金 = 頭金 + 諸費用 + 生活防衛資金。現在の貯金 {man(p['current_savings_man'])} を差し引いて計算")
+    print(f"  ※必要な現金 = 頭金 + 諸費用。現在の貯金 {man(p['current_savings_man'])} を差し引いて計算")
 
     # 2. 金利別の月返済額
     print("\n[2] 金利別の月返済額・総返済額")
@@ -146,7 +143,7 @@ def report(p: dict) -> None:
 
 
 def main() -> None:
-    p = json.loads(PARAMS_PATH.read_text(encoding="utf-8"))
+    p = copy.deepcopy(PARAMS)
     ap = argparse.ArgumentParser(description="住宅購入シミュレーター")
     ap.add_argument("--price", type=float, help="物件価格(万円)")
     ap.add_argument("--down", type=float, help="頭金比率 (例: 0.1)")
