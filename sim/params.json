@@ -1,0 +1,25 @@
+{
+  "_comment": "金額の単位はすべて万円。数値を書き換えて試算する。",
+  "price_man": 6000,
+  "down_payment_ratio": 0.1,
+  "purchase_cost_ratio": 0.07,
+  "emergency_fund_man": 300,
+  "loan_years": 35,
+  "current_savings_man": 250,
+  "months_until_purchase": 36,
+  "down_payment_options": [0.0, 0.1, 0.15, 0.2],
+  "saving_months_options": [24, 30, 36],
+
+  "income_after_child_man": 900,
+  "burden_ratios": [0.2, 0.25],
+
+  "rate_scenarios": [0.8, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5],
+  "base_rate": 1.0,
+  "fixed_rate_compare": 2.0,
+  "rising_scenario": {"start_rate": 1.0, "step": 0.25, "every_years": 3, "cap": 3.0},
+
+  "management_fee_man": 1.8,
+  "repair_reserve_man": 1.5,
+  "property_tax_annual_man": 18,
+  "current_rent_man": 10.5
+}
